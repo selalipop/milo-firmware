@@ -1,0 +1,13 @@
+[project]
+name = "milo-firmware"
+version = "0.1.0"
+description = "Firmware for the Milo AI friend"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "adafruit-circuitpython-neopixel>=6.3.15",
+    "elevenlabs[pyaudio]>=1.51.0",
+    "python-dotenv>=1.0.1",
+    "rpi-gpio>=0.7.1",
+    "rpi-ws281x>=5.0.0",
+]
