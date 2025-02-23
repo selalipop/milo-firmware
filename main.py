@@ -41,8 +41,7 @@ client_tools = AsyncClientTools()
 async def play_existing_music(parameters: dict):
     songName = parameters.get("songName")
     logging.info(f"Requested music: {songName}")
-    await play_spotify_track(songName)
-    return "Playing existing music"
+    return await play_spotify_track(songName)
 
 client_tools.register("playExistingSong", play_existing_music)
 

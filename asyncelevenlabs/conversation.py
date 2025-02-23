@@ -3,66 +3,38 @@ import base64
 import json
 from typing import Callable, Optional, Any, Awaitable
 import asyncio
-from websockets.client import connect as ws_connect
+from websockets.client import connect as ws_connect, WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedOK
 from elevenlabs import AsyncElevenLabs
 import traceback
 import logging
 
 class AsyncAudioInterface(ABC):
-    """AudioInterface provides an abstraction for handling audio input and output."""
-    
     @abstractmethod
     async def start(self, input_callback: Callable[[bytes], Awaitable[None]]):
-        """Starts the audio interface.
-        
-        Called one time before the conversation starts.
-        The `input_callback` should be called regularly with input audio chunks from
-        the user. The audio should be in 16-bit PCM mono format at 16kHz. Recommended
-        chunk size is 4000 samples (250 milliseconds).
-        """
         pass
 
     @abstractmethod
     async def stop(self):
-        """Stops the audio interface.
-        
-        Called one time after the conversation ends. Should clean up any resources
-        used by the audio interface and stop any audio streams.
-        """
         pass
 
     @abstractmethod
     async def output(self, audio: bytes):
-        """Output audio to the user.
-        
-        The `audio` input is in 16-bit PCM mono format at 16kHz.
-        """
         pass
 
     @abstractmethod
     async def interrupt(self):
-        """Interruption signal to stop any audio output.
-        
-        User has interrupted the agent and all previously buffered audio output should
-        be stopped.
-        """
         pass
 
-
 class AsyncClientTools:
-    """Handles registration and execution of client-side tools that can be called by the agent."""
-
     def __init__(self):
-        self.tools: dict[str, tuple[Callable[[dict], Awaitable[Any]], bool]] = {}
+        self.tools: dict[str, Callable[[dict], Awaitable[Any]]] = {}
         self._running = False
 
     async def start(self):
-        """Start the client tools."""
         self._running = True
 
     async def stop(self):
-        """Stop the client tools."""
         self._running = False
 
     def register(
@@ -70,12 +42,6 @@ class AsyncClientTools:
         tool_name: str,
         handler: Callable[[dict], Awaitable[Any]],
     ) -> None:
-        """Register a new tool that can be called by the AI agent.
-
-        Args:
-            tool_name: Unique identifier for the tool
-            handler: Async function that implements the tool's logic
-        """
         if not asyncio.iscoroutinefunction(handler):
             raise ValueError("Handler must be an async function")
         if tool_name in self.tools:
@@ -83,10 +49,6 @@ class AsyncClientTools:
         self.tools[tool_name] = handler
 
     async def handle(self, tool_name: str, parameters: dict) -> Any:
-        """Execute a registered tool with the given parameters.
-
-        Returns the result of the tool execution.
-        """
         if not self._running:
             raise RuntimeError("ClientTools is not running")
             
@@ -96,10 +58,7 @@ class AsyncClientTools:
         handler = self.tools[tool_name]
         return await handler(parameters)
 
-
 class AsyncConversationInitiationData:
-    """Configuration options for the Conversation."""
-
     def __init__(
         self,
         extra_body: Optional[dict] = None,
@@ -109,7 +68,6 @@ class AsyncConversationInitiationData:
         self.extra_body = extra_body or {}
         self.conversation_config_override = conversation_config_override or {}
         self.dynamic_variables = dynamic_variables or {}
-
 
 class AsyncConversation:
     def __init__(
@@ -126,19 +84,6 @@ class AsyncConversation:
         callback_user_transcript: Optional[Callable[[str], Awaitable[None]]] = None,
         callback_latency_measurement: Optional[Callable[[int], Awaitable[None]]] = None,
     ):
-        """Conversational AI session.
-
-        Args:
-            client: The ElevenLabs client to use for the conversation.
-            agent_id: The ID of the agent to converse with.
-            requires_auth: Whether the agent requires authentication.
-            audio_interface: The audio interface to use for input and output.
-            client_tools: The client tools to use for the conversation.
-            callback_agent_response: Async callback for agent responses.
-            callback_agent_response_correction: Async callback for agent response corrections.
-            callback_user_transcript: Async callback for user transcripts.
-            callback_latency_measurement: Async callback for latency measurements.
-        """
         self.client = client
         self.agent_id = agent_id
         self.requires_auth = requires_auth
@@ -154,6 +99,7 @@ class AsyncConversation:
         self._last_interrupt_id = 0
         self._ws = None
         self._running = False
+        self._main_task = None
 
     async def start_session(self):
         """Starts the conversation session."""
@@ -163,6 +109,9 @@ class AsyncConversation:
         self._running = True
         ws_url = await self._get_signed_url() if self.requires_auth else self._get_wss_url()
         
+        self._main_task = asyncio.create_task(self._run(ws_url))
+
+    async def _run(self, ws_url: str):
         async with ws_connect(ws_url, max_size=16 * 1024 * 1024) as ws:
             self._ws = ws
             await self.client_tools.start()
@@ -185,22 +134,27 @@ class AsyncConversation:
                 except ConnectionClosedOK:
                     await self.end_session()
                 except Exception as e:
-                    print(f"Error sending user audio chunk: {e}")
+                    logging.error(f"Error sending user audio chunk: {e}")
                     await self.end_session()
 
             await self.audio_interface.start(input_callback)
             
-            try:
-                async for message in ws:
+            while self._running:
+                try:
+                    message = await asyncio.wait_for(ws.recv(), timeout=0.5)
                     if not self._running:
                         break
-                    await self._handle_message(json.loads(message))
-            except ConnectionClosedOK:
-                await self.end_session()
-            except Exception as e:
-                traceback.print_exc()
-                print(f"Error in websocket loop: {e}")
-                await self.end_session()
+                    
+                    data = json.loads(message)
+                    await self._handle_message(data)
+                    
+                except asyncio.TimeoutError:
+                    continue
+                except ConnectionClosedOK:
+                    await self.end_session()
+                except Exception as e:
+                    logging.error(f"Error in websocket loop: {e}")
+                    await self.end_session()
 
     async def end_session(self):
         """Ends the conversation session and cleans up resources."""
@@ -208,6 +162,13 @@ class AsyncConversation:
             return
             
         self._running = False
+        
+        if self._main_task:
+            try:
+                await self._main_task
+            except asyncio.CancelledError:
+                pass
+            
         await self.audio_interface.stop()
         await self.client_tools.stop()
         
@@ -215,10 +176,12 @@ class AsyncConversation:
             await self._ws.close()
 
     async def _handle_message(self, message: dict):
+        """Handle websocket messages."""
         msg_type = message["type"]
 
         if msg_type == "conversation_initiation_metadata":
             event = message["conversation_initiation_metadata_event"]
+            assert self._conversation_id is None
             self._conversation_id = event["conversation_id"]
 
         elif msg_type == "audio":
@@ -230,23 +193,23 @@ class AsyncConversation:
 
         elif msg_type == "agent_response" and self.callback_agent_response:
             event = message["agent_response_event"]
-            asyncio.create_task(self.callback_agent_response(event["agent_response"].strip()))
+            await self.callback_agent_response(event["agent_response"].strip())
 
         elif msg_type == "agent_response_correction" and self.callback_agent_response_correction:
             event = message["agent_response_correction_event"]
-            asyncio.create_task(self.callback_agent_response_correction(
+            await self.callback_agent_response_correction(
                 event["original_agent_response"].strip(),
                 event["corrected_agent_response"].strip()
-            ))
+            )
 
         elif msg_type == "user_transcript" and self.callback_user_transcript:
             event = message["user_transcription_event"]
-            asyncio.create_task(self.callback_user_transcript(event["user_transcript"].strip()))
+            await self.callback_user_transcript(event["user_transcript"].strip())
 
         elif msg_type == "interruption":
             event = message["interruption_event"]
             self._last_interrupt_id = int(event["event_id"])
-            asyncio.create_task(self.audio_interface.interrupt())
+            await self.audio_interface.interrupt()
 
         elif msg_type == "ping":
             event = message["ping_event"]
@@ -255,23 +218,18 @@ class AsyncConversation:
                 "event_id": event["event_id"],
             }))
             if self.callback_latency_measurement and event["ping_ms"]:
-                asyncio.create_task(self.callback_latency_measurement(int(event["ping_ms"])))
+                await self.callback_latency_measurement(int(event["ping_ms"]))
 
         elif msg_type == "client_tool_call":
             tool_call = message.get("client_tool_call", {})
             tool_name = tool_call.get("tool_name")
-            logging.debug(f"Calling tool: {tool_name}")
-
             parameters = {
                 "tool_call_id": tool_call["tool_call_id"],
                 **tool_call.get("parameters", {})
             }
-            logging.debug(f"Parameters: {parameters}")
-            print(f"Parameters: {parameters}")
+            
             try:
                 result = await self.client_tools.handle(tool_name, parameters)
-                logging.debug(f"Result: {result}")
-                print(f"Result: {result}")
                 response = {
                     "type": "client_tool_result",
                     "tool_call_id": parameters["tool_call_id"],
@@ -286,7 +244,7 @@ class AsyncConversation:
                     "is_error": True,
                 }
 
-            if self._running:
+            if self._running and self._ws:
                 await self._ws.send(json.dumps(response))
 
     def _get_wss_url(self) -> str:
