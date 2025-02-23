@@ -11,6 +11,6 @@ dependencies = [
     "pvcobra>=2.0.5",
     "pvrecorder>=1.2.5",
     "python-dotenv>=1.0.1",
-    "rpi-gpio>=0.7.1",
-    "rpi-ws281x>=5.0.0",
+    "rpi-gpio>=0.7.1; sys_platform == 'linux'",
+    "rpi-ws281x>=5.0.0; sys_platform == 'linux'",
 ]

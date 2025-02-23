@@ -286,8 +286,8 @@ dependencies = [
     { name = "pvcobra" },
     { name = "pvrecorder" },
     { name = "python-dotenv" },
-    { name = "rpi-gpio" },
-    { name = "rpi-ws281x" },
+    { name = "rpi-gpio", marker = "sys_platform == 'linux'" },
+    { name = "rpi-ws281x", marker = "sys_platform == 'linux'" },
 ]
 
 [package.metadata]
@@ -298,8 +298,8 @@ requires-dist = [
     { name = "pvcobra", specifier = ">=2.0.5" },
     { name = "pvrecorder", specifier = ">=1.2.5" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
-    { name = "rpi-gpio", specifier = ">=0.7.1" },
-    { name = "rpi-ws281x", specifier = ">=5.0.0" },
+    { name = "rpi-gpio", marker = "sys_platform == 'linux'", specifier = ">=0.7.1" },
+    { name = "rpi-ws281x", marker = "sys_platform == 'linux'", specifier = ">=5.0.0" },
 ]
 
 [[package]]
