@@ -18,7 +18,7 @@ async def play_spotify_track(query: str) -> dict:
     try:
         # First, run the search command and capture its output
         search_cmd = f'/home/teak/.cargo/bin/spotify_player search "{query}"'
-        logging.debug(f"Running search command: {search_cmd}")
+        logging.info(f"Running search command: {search_cmd}")
         search_proc = await asyncio.create_subprocess_exec(
             *shlex.split(search_cmd),
             stdout=asyncio.subprocess.PIPE,
@@ -36,7 +36,7 @@ async def play_spotify_track(query: str) -> dict:
             
         track = track_data['tracks'][0]
         
-        logging.debug(f"Track data: {track}")
+        logging.info(f"Track data: {track}")
         # Start playback with the track ID
         play_cmd = f'/home/teak/.cargo/bin/spotify_player playback start radio track --id {track["id"]}'
         print(f"Running play command: {play_cmd}")
