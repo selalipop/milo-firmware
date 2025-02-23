@@ -23,7 +23,7 @@ class WakeWordDetector:
         if keyword is None:
             keyword = "milo"
         if keyword_path is None:
-            keyword_path = "hey_milo.ppn"
+            keyword_path = "models/wakeword/hey_milo.ppn"
         self._access_key = access_key
         self._keyword = keyword
         self._device_index = find_microphone_index()

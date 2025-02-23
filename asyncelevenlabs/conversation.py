@@ -7,7 +7,7 @@ from websockets.client import connect as ws_connect
 from websockets.exceptions import ConnectionClosedOK
 from elevenlabs import AsyncElevenLabs
 import traceback
-
+import logging
 
 class AsyncAudioInterface(ABC):
     """AudioInterface provides an abstraction for handling audio input and output."""
@@ -260,13 +260,18 @@ class AsyncConversation:
         elif msg_type == "client_tool_call":
             tool_call = message.get("client_tool_call", {})
             tool_name = tool_call.get("tool_name")
+            logging.debug(f"Calling tool: {tool_name}")
+
             parameters = {
                 "tool_call_id": tool_call["tool_call_id"],
                 **tool_call.get("parameters", {})
             }
-
+            logging.debug(f"Parameters: {parameters}")
+            print(f"Parameters: {parameters}")
             try:
                 result = await self.client_tools.handle(tool_name, parameters)
+                logging.debug(f"Result: {result}")
+                print(f"Result: {result}")
                 response = {
                     "type": "client_tool_result",
                     "tool_call_id": parameters["tool_call_id"],

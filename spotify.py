@@ -1,35 +1,78 @@
+import asyncio
+import logging
 import subprocess
 import json
 import shlex
+import traceback
 
-def play_spotify_track(query: str) -> None:
+async def play_spotify_track(query: str) -> dict:
     """
     Search for a track on Spotify using spotify-player and start playback.
     
     Args:
         query (str): Plain English search query for the track
+        
+    Returns:
+        dict: Track data including id, name, artist, etc. or error information
     """
     try:
         # First, run the search command and capture its output
-        search_cmd = f'spotify_player search "{query}"'
-        search_result = subprocess.check_output(shlex.split(search_cmd), text=True)
+        search_cmd = f'/home/teak/.cargo/bin/spotify_player search "{query}"'
+        logging.debug(f"Running search command: {search_cmd}")
+        search_proc = await asyncio.create_subprocess_exec(
+            *shlex.split(search_cmd),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await search_proc.communicate()
         
-        # Parse the JSON output and get the first track's ID
-        track_data = json.loads(search_result)
-        track_id = track_data['tracks'][0]['id']
+        if search_proc.returncode != 0:
+            return {"error": f"Search failed: {stderr.decode()}"}
+            
+        # Parse the JSON output and get the first track's data
+        track_data = json.loads(stdout.decode())
+        if not track_data.get('tracks'):
+            return {"error": f"No tracks found for query: {query}"}
+            
+        track = track_data['tracks'][0]
         
+        logging.debug(f"Track data: {track}")
         # Start playback with the track ID
-        play_cmd = f'spotify_player playback start track --id {track_id}'
-        subprocess.run(shlex.split(play_cmd))
+        play_cmd = f'/home/teak/.cargo/bin/spotify_player playback start radio track --id {track["id"]}'
+        print(f"Running play command: {play_cmd}")
+        play_proc = await asyncio.create_subprocess_exec(
+            *shlex.split(play_cmd),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        play_stdout, play_stderr = await play_proc.communicate()
+        print("finished playing")
+        if play_proc.returncode != 0:
+            error_string = play_stderr.decode()
+            print(f"Playback failed: {error_string}")
+            return {"error": f"Playback failed: {error_string}"}
         
-    except subprocess.CalledProcessError as e:
-        print(f"Error running spotify-player: {e}")
+        print(f"Played track: {play_stdout.decode()}")      
+
+        logging.info(f"Playback started for track: {track['name']}")
+        
+        return {
+            "success": True,
+            "track": track
+        }
+        
     except json.JSONDecodeError as e:
-        print(f"Error parsing search results: {e}")
-    except (KeyError, IndexError) as e:
-        print(f"No tracks found for query: {query}")
+        traceback.print_exc()
+        logging.error(f"Error parsing search results: {e}")
+        return {"error": f"Error parsing search results: {e}"}
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        traceback.print_exc()
+        logging.error(f"Unexpected error: {e}")
+        return {"error": f"Unexpected error: {e}"}
 
 # Example usage:
-# play_spotify_track("Sweet Child O' Mine")
+# async def main():
+#     result = await play_spotify_track("Sweet Child O' Mine")
+#     print(result)
+# 
+# asyncio.run(main())
