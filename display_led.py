@@ -10,6 +10,7 @@ num_pixels = 8
 ORDER = neopixel.GRB
 
 class AnimationType(Enum):
+    OFF = 0
     CHASE = 1
 
 class LedDisplay(Display):
@@ -19,10 +20,11 @@ class LedDisplay(Display):
         )
         self.current_animation = AnimationType.CHASE
 
-    async def show_spinner(self) -> None:
-        asyncio.create_task(self.chase_animation(duration=-1, color=(255, 255, 255)))
+    def show_spinner(self) -> None:
+        asyncio.create_task(self._chase_animation(duration=-1, color=(255, 255, 255)))
 
-    async def chase_animation(self, duration=-1, color=(255, 255, 255)):
+    
+    async def _chase_animation(self, duration=-1, color=(255, 255, 255)):
         self.current_animation = AnimationType.CHASE
         start_time = asyncio.get_event_loop().time()
         position = 0
@@ -38,7 +40,7 @@ class LedDisplay(Display):
             await asyncio.sleep(0.05)
             position = (position + 1) % num_pixels
 
-    async def turn_off(self) -> None:
+    def turn_off(self) -> None:
         self.current_animation = AnimationType.OFF
         self.pixels.fill((0, 0, 0))
         self.pixels.show()

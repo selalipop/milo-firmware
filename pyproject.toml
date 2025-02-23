@@ -7,6 +7,9 @@ requires-python = ">=3.11"
 dependencies = [
     "adafruit-circuitpython-neopixel>=6.3.15",
     "elevenlabs[pyaudio]>=1.51.0",
+    "picovoice>=3.0.3",
+    "pvcobra>=2.0.5",
+    "pvrecorder>=1.2.5",
     "python-dotenv>=1.0.1",
     "rpi-gpio>=0.7.1",
     "rpi-ws281x>=5.0.0",

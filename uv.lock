@@ -282,6 +282,9 @@ source = { virtual = "." }
 dependencies = [
     { name = "adafruit-circuitpython-neopixel" },
     { name = "elevenlabs", extra = ["pyaudio"] },
+    { name = "picovoice" },
+    { name = "pvcobra" },
+    { name = "pvrecorder" },
     { name = "python-dotenv" },
     { name = "rpi-gpio" },
     { name = "rpi-ws281x" },
@@ -291,9 +294,61 @@ dependencies = [
 requires-dist = [
     { name = "adafruit-circuitpython-neopixel", specifier = ">=6.3.15" },
     { name = "elevenlabs", extras = ["pyaudio"], specifier = ">=1.51.0" },
+    { name = "picovoice", specifier = ">=3.0.3" },
+    { name = "pvcobra", specifier = ">=2.0.5" },
+    { name = "pvrecorder", specifier = ">=1.2.5" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "rpi-gpio", specifier = ">=0.7.1" },
     { name = "rpi-ws281x", specifier = ">=5.0.0" },
+]
+
+[[package]]
+name = "picovoice"
+version = "3.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pvporcupine" },
+    { name = "pvrhino" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e3/ef/6ce30e00222e5193029eb5f183ffdf122f67cdd012b13213e8fed53ecc89/picovoice-3.0.3.tar.gz", hash = "sha256:f8958050d847e91f4e571e251b670d4f65ec768991c97a4f735be039f239e006", size = 11965 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/22/c2/2d8bc0b5e3cfb3c0c523e4c95d66d300a9fd2872d796a7413c58220050ff/picovoice-3.0.3-py3-none-any.whl", hash = "sha256:7d9cfebe26e33dd3c851656b180224de8107de0aec9935af32eeea7e9b64260b", size = 11010 },
+]
+
+[[package]]
+name = "pvcobra"
+version = "2.0.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/a2/790e0839a3040e6f1bccf4bca01efc67a96ce5e9af36c974a697f6ad7b22/pvcobra-2.0.5.tar.gz", hash = "sha256:4faa6a1aa507c440aa710fb150996b13e56760ecfc223777285c189bf0ee6320", size = 1948923 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/8b/4483ba6a2a868e1c6c4471dfb167d45238c98811cb3e6198143f2093cea7/pvcobra-2.0.5-py3-none-any.whl", hash = "sha256:2decb5b436f0ac26f4706c26086cc636a235249aabe5243c45a50d5c3df9c08b", size = 1947613 },
+]
+
+[[package]]
+name = "pvporcupine"
+version = "3.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/42/ae475e99c0d8d4730cd56c1a4a06b8fb05eb2df4c427838cf39c338ea9b1/pvporcupine-3.0.3.tar.gz", hash = "sha256:28e647b02b7472e72702f0664c024808c5cb98f22ea7c557882b01e8966e9d42", size = 2411011 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/03/c3/e80f3e0cc081287daa439d2d2200d500a44f7a2bfd0efe1c55ecafa2121d/pvporcupine-3.0.3-py3-none-any.whl", hash = "sha256:b5150aa0ec2d2fc5a6a9f1b16e6b7c81ebad933c76fecaede9cd7e3d54ed7b63", size = 2420404 },
+]
+
+[[package]]
+name = "pvrecorder"
+version = "1.2.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/00/f7/dd21e47dce84c5b72aec3cda93f8b27cd09951b8ed034ab80664a78e597b/pvrecorder-1.2.5.tar.gz", hash = "sha256:70841125b3b33a759573dfb29b4ad787e11257065c452d7a5911b9ce793dfa6f", size = 4068795 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f7/49/56090a4a26e2f7334b73995a6f81bd7861bd5200febac2c8249f8098f9f6/pvrecorder-1.2.5-py3-none-any.whl", hash = "sha256:2c4679f7a8f0efebf87a911e75027238b98af4dbb009fa7b18f02c6f0488bd61", size = 4071725 },
+]
+
+[[package]]
+name = "pvrhino"
+version = "3.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/93/ab3dff50bf4ebfc9a4afe1cb2a52e573ec5f2b7e4c420b742f8192228e52/pvrhino-3.0.3.tar.gz", hash = "sha256:509c587ced9c3d165c5b91906c9ca9733b54539bd04d9b84f534f602e3e325a0", size = 3058926 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/81/2a037cd80cab11c7f18de69908f9cb6797e8d61612e2b88bcf36ac54db85/pvrhino-3.0.3-py3-none-any.whl", hash = "sha256:4b0984cff08a9ae879a5971f8ab3ab4fe1915f2ba6239361d059814237d7461e", size = 3058188 },
 ]
 
 [[package]]
