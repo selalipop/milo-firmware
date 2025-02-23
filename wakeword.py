@@ -6,14 +6,18 @@ from pvrecorder import PvRecorder
 import pvporcupine
 import pvcobra
 from pvrecorder import PvRecorder
+from util.is_raspberry import is_raspberry_pi
 
 valid_microphone_names = ["USB PnP Sound Device", "PCM2902"]
 
 def find_microphone_index():
-    for i, device in enumerate(PvRecorder.get_available_devices()):
+    devices = PvRecorder.get_available_devices()
+    for i, device in enumerate(devices):
         if any(name in device for name in valid_microphone_names):
             return i
-    logging.error("No microphone found")
+    logging.error("No valid microphone found. Available devices:")
+    for device in devices:
+        logging.error(f"  - {device}")
     return 0
 
 class WakeWordDetector:
@@ -23,7 +27,10 @@ class WakeWordDetector:
         if keyword is None:
             keyword = "milo"
         if keyword_path is None:
-            keyword_path = "models/wakeword/hey_milo.ppn"
+            if is_raspberry_pi():
+                keyword_path = "models/wakeword/hey_milo.ppn"
+            else:
+                keyword_path = "models/wakeword/hey_milo_mac.ppn"
         self._access_key = access_key
         self._keyword = keyword
         self._device_index = find_microphone_index()
